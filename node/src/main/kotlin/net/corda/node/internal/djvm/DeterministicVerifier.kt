@@ -9,6 +9,8 @@ import net.corda.core.contracts.TransactionVerificationException
 import net.corda.core.crypto.SecureHash
 import net.corda.core.internal.ContractVerifier
 import net.corda.core.internal.Verifier
+import net.corda.core.internal.getNamesOfClassesImplementing
+import net.corda.core.serialization.SerializationCustomSerializer
 import net.corda.core.serialization.serialize
 import net.corda.core.transactions.LedgerTransaction
 import net.corda.djvm.SandboxConfiguration
@@ -28,6 +30,7 @@ class DeterministicVerifier(
 ) : Verifier(ltx, transactionClassLoader) {
 
     override fun verifyContracts() {
+        val customSerializerNames = getNamesOfClassesImplementing(transactionClassLoader, SerializationCustomSerializer::class.java)
         val result = IsolatedTask(ltx.id.toString(), sandboxConfiguration).run<Any>(Function { classLoader ->
             (classLoader.parent as? SandboxClassLoader)?.apply {
                 /**
@@ -49,7 +52,7 @@ class DeterministicVerifier(
              * that we can execute inside the DJVM's sandbox.
              */
             val sandboxTx = ltx.transform { componentGroups, serializedInputs, serializedReferences ->
-                val serializer = Serializer(classLoader)
+                val serializer = Serializer(classLoader, customSerializerNames)
                 val componentFactory = ComponentFactory(
                     classLoader,
                     taskFactory,

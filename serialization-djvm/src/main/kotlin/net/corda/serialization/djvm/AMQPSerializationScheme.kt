@@ -9,6 +9,7 @@ import net.corda.serialization.djvm.serializers.SandboxBitSetSerializer
 import net.corda.serialization.djvm.serializers.SandboxCertPathSerializer
 import net.corda.serialization.djvm.serializers.SandboxCharacterSerializer
 import net.corda.serialization.djvm.serializers.SandboxCollectionSerializer
+import net.corda.serialization.djvm.serializers.SandboxCorDappCustomSerializer
 import net.corda.serialization.djvm.serializers.SandboxCurrencySerializer
 import net.corda.serialization.djvm.serializers.SandboxDecimal128Serializer
 import net.corda.serialization.djvm.serializers.SandboxDecimal32Serializer
@@ -59,6 +60,7 @@ class AMQPSerializationScheme(
     private val classLoader: SandboxClassLoader,
     private val sandboxBasicInput: Function<in Any?, out Any?>,
     private val taskFactory: Function<in Any, out Function<in Any?, out Any?>>,
+    private val customSerializerClassNames: Set<String>,
     private val serializerFactoryFactory: SerializerFactoryFactory
 ) : SerializationScheme {
 
@@ -112,6 +114,10 @@ class AMQPSerializationScheme(
             register(SandboxDecimal64Serializer(classLoader, taskFactory))
             register(SandboxDecimal32Serializer(classLoader, taskFactory))
             register(SandboxSymbolSerializer(classLoader, taskFactory, sandboxBasicInput))
+
+            for (customSerializerName in customSerializerClassNames) {
+                register(SandboxCorDappCustomSerializer(customSerializerName, classLoader, taskFactory, this))
+            }
         }
     }
 
